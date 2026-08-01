@@ -1,0 +1,159 @@
+#include <iostream>
+#include <iomanip>
+#define MAX 5
+
+using namespace std;
+
+struct Rec{ //creating structs are like creating own data type
+    string name;
+    int age;
+    
+    Rec(){ //gives a blank/0 record for the users to fill later
+        name = "";
+        age = 0;
+    }
+    
+    Rec(string nm,  int a){ //if user already has data that will fill the record
+        name = nm;
+        age = a;
+    }
+};
+
+class Record{
+    private:
+        Rec perRec[MAX]; //(data type) (variable name) (array symbol & size)
+        int last;
+    
+    public:
+    Record(){
+        last = -1;
+    }
+    
+    int border = 16;
+
+    void addRec(Rec rec){
+        if(isFull()){
+            cout << "Recor is full." << endl;
+        }
+        else{
+            last++;
+            perRec[last] = rec;
+        }
+    }
+    
+    void delRec(string n){
+        if(isEmpty()){
+            cout << "Record is empty." << endl;
+        }
+        else{
+            int p = locate(n);
+            int i;
+            
+            if(p == -1){
+                cout << "record not found." << endl;
+            }
+            else{
+                for(i = p; i <= last; i++){
+                    perRec[i] = perRec[i+1];
+                }
+                last--;
+                cout << n << "'s record successfully deleted." << endl;
+            }
+        }
+    }
+    
+    void display(){
+        int i;
+        
+        for(i = 0; i <= border*2; i++) cout << "=";
+        cout << endl;
+        cout << std::left << setw(4) << "No.";
+        cout << std::left << setw(12) << "Name";
+        cout << std::left << setw(8) << "Age";
+        cout << std::left << setw(8) << "Remarks" << endl;
+        for(i = 0; i <= border*2; i++) cout << "=";
+        cout << endl;
+        
+        for(i = 0; i <= last; i++){
+            cout << std::left << setw(4) << i+1;
+            cout << std::left << setw(12) << perRec[i].name;
+            cout << std::left << setw(8) << perRec[i].age;
+            cout << std::left << setw(8) << (perRec[i].age >= 18 ? "Adult":"Minor") << endl;
+        }
+    }
+    
+    bool isFull(){
+        return last == MAX -1;
+    }
+    
+    bool isEmpty(){
+        return last == -1;
+    }
+    
+    int locate(string nm){
+        int i;
+        for(i = 0; i <= last; i++){
+            if(perRec[i].name == nm){
+                return i;
+            }
+        }
+        return -1;
+    }
+    
+    int menu(){
+        int i, ch;
+        
+        for(i = 0 ; i < border ; i++) cout << "=";
+        cout << "\nMENU" << endl;
+        for(i = 0 ; i < border ; i++) cout << "=";
+        
+        cout << "\n[1] ADD RECORD" << endl;
+        cout << "[2] DELETE RECORD" << endl;
+        cout << "[3] DISPLAY ALL RECORD" << endl;
+        cout << "[4] EXIT" << endl;
+        cout << "Select(1-4): ";
+        cin >> ch;
+        
+        return ch;
+    }
+};
+
+int main(){
+    Rec rec;
+    Record rc;
+    while(1){
+        switch(rc.menu()){
+            case 1:
+                cout << "Enter name: ";
+                cin.ignore();
+                getline(cin, rec.name);
+                
+                cout << "Enter age: ";
+                cin >> rec.age;
+                
+                rc.addRec(rec);
+                break;
+                
+            case 2:
+                cout << "Enter name: ";
+                cin.ignore();
+                getline(cin, rec.name);
+                
+                rc.delRec(rec.name);    
+                break;
+            
+            case 3:
+                rc.display();
+                break;
+            
+            case 4:
+                exit(0);
+                break;
+            
+            default:
+                while(getchar() != '\n');
+                cout << "Invalid input" << endl;
+        }
+    }
+    return 0;
+}
