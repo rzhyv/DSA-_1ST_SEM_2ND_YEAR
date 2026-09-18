@@ -3,17 +3,17 @@
 // Programmed by: Romero, Shylla Mae L.
 //                Tumala, Samantha Michelle G.
 
-#include <iostream>
-#include <windows.h>
-#include <sstream>
-#include <iomanip>
-#include <fstream>
-#include <string>
-#include <cstdlib>
-#include <limits>
+#include <iostream> //basic input and output functions
+#include <windows.h> //accesses the window api to detect, write, and read from drive
+#include <sstream> //treats strings as stream and lets us read or write to a string
+#include <fstream> //for file handling needed for cross checking
+#include <iomanip> //for manipulating format such as balance having precision of 2 decimals
+#include <string> //mostly used for checking if strings are empty and for determining their size.
+#include <cstdlib> //for memory allocation and data type conversion
+#include <limits> //for knowing the min and max of int data type
 using namespace std;
 
-struct Account{
+struct Account{ //the node for accounts since linked list is used.
   string accountNum;
   string name;
   string birthday;
@@ -21,23 +21,23 @@ struct Account{
   float balance;
   string pin;
   string encryptedPin;
-  Account *next;
+  Account *next; //next pointer to keep different account nodes linked 
 };
 
 class ATM{
   private:
-    Account *head;
-    const int CAESAR_SHIFT = 3;
-    long nextAccountNum = 10000;
+    Account *head; //declared a head node which will be used for the accounts of users.
+    const int CAESAR_SHIFT = 3; //ceasar cipher shifts 3 places from the original digit. This will be discussed later.
+    long nextAccountNum = 10000; //for the accNum to be 5 digits, we started with 10000. 
   public:
-    ATM(){
+    ATM(){ //initialized the head pinter and set it to NULL
       head=NULL;
     }
-
+    //23 methods in total
   void addAccount(string accNum, string name, string bday, string contNum, float balance, string pin);
   void accountRecords();
   Account *find(string accNum);
-  void updateRecord(string pin);
+  void updateRecord(Account *acc);
   string generateAccountNumber();
   string caesarEncrypt(string pin);
   string caesarDecrypt(string pin);
@@ -59,7 +59,7 @@ class ATM{
   Account *authenticate(string &outAccNum, string &outPin, string &outDrive);
 };
 
-void ATM::addAccount(string accNum, string name, string bday, string contNum, float balance, string pin){
+void ATM::addAccount(string accNum, string name, string bday, string contNum, float balance, string pin){ //for adding new account during registration
   Account *node = new Account();
   node->accountNum = accNum;
   node->name = name;
@@ -72,13 +72,13 @@ void ATM::addAccount(string accNum, string name, string bday, string contNum, fl
   head = node;
 }
 
-void ATM::accountRecords(){
+void ATM::accountRecords(){ //for the csv file or the record of the machine, which is also the one used for cross checking
   ifstream file("Account_Records.csv");
   string line;
   long maxAccNum = 0;
 
   if(!file.good()){
-    cout << "Warning: could not open ATM Record. Machine out of service.\n";
+    cout << "Warning: could not open ATM Record.\n";
     system("pause");
     return;
   }
@@ -101,7 +101,7 @@ void ATM::accountRecords(){
     balanceStr = trim(balanceStr);
 
     try{
-      double balance = stod(balanceStr);
+      float balance = stof(balanceStr);
       addAccount(accNum, name, bday, contNum, balance, pin);
       long numericAccNum = stol(accNum);
       if(numericAccNum > maxAccNum) maxAccNum = numericAccNum;
@@ -123,7 +123,7 @@ Account *ATM::find(string accNum){
   return NULL;
 }
 
-void ATM::updateRecord(string pin){
+void ATM::updateRecord(Account *acc){
   ofstream file("Account_Records.csv");
   if(!file.good()){
     cout << "could not save changes to ATM record." << endl;
@@ -336,7 +336,7 @@ Account *ATM::registerAccount(string &outAccNum, string &outPin, string &outDriv
     cout << "--> Enter your contact number: ";
     cin >> contIn;
     if(!isValidContact(contIn)){
-      cout << "Invalid contact number. Digits only, 7-13 digits.\n";
+      cout << "Invalid input. Contact number should only contain exactly 11 digits.\n";
     }
   }
 
@@ -345,6 +345,7 @@ Account *ATM::registerAccount(string &outAccNum, string &outPin, string &outDriv
     system("pause");
     return NULL;
   }
+  else{
 
   string newAccNum = generateAccountNumber();
   cout << "--> Your new account number is: " << newAccNum << "\n";
@@ -386,25 +387,27 @@ Account *ATM::registerAccount(string &outAccNum, string &outPin, string &outDriv
     if(initialBalance < 5000) cout << "Initial balance should not be lower than P5,000.\n"; 
   }
 
-  addAccount(newAccNum, name, bdayIn, contIn, initialBalance, newPin);
-  updateRecord(newPin); // save the new account to Account_Records.csv
-
-  string regDrive;
-  while(regDrive.empty()){
-    regDrive = findRemovableDrive();
-    if(regDrive.empty()){
-      Sleep(500); // wait briefly before checking again, no prompt shown
+    Account *newAcc = find(newAccNum);
+    addAccount(newAccNum, name, bdayIn, contIn, initialBalance, newPin);
+    updateRecord(newAcc); // save the new account to Account_Records.csv
+    
+    string regDrive;
+    while(regDrive.empty()){
+      regDrive = findRemovableDrive();
+      if(regDrive.empty()){
+        Sleep(500); // wait briefly before checking again, no prompt shown
+      }
     }
+    
+    retrieveCardData(regDrive, newAccNum, newPin);
+    cout << "\nRegistration successful. Please proceed to login.\n";
+    system("pause");
+    
+    outAccNum = newAccNum;
+    outPin = newPin;
+    outDrive = regDrive;
+    return find(newAccNum);
   }
-
-  retrieveCardData(regDrive, newAccNum, newPin);
-  cout << "\nRegistration successful. Please proceed to login.\n";
-  system("pause");
-
-  outAccNum = newAccNum;
-  outPin = newPin;
-  outDrive = regDrive;
-  return find(newAccNum);
 }
 
 //REGISTER AND LOGIN
@@ -558,7 +561,7 @@ int main(){
         }
 
         acc->balance -= amt;
-        atm.updateRecord(acc->pin);
+        atm.updateRecord(acc);
         cout << "Withdrawal successful.\n";
         if(willBeZero){
           cout << "Warning: Your account now has a zero balance.\n";
@@ -578,7 +581,7 @@ int main(){
           cout << "Invalid deposit. Minimum deposit is P100.\n";
         } else {
           acc->balance += amt;
-          atm.updateRecord(acc->pin);
+          atm.updateRecord(acc);
           cout << "Deposit successful.\n";
         }
         break;
@@ -606,7 +609,8 @@ int main(){
         } else {
           acc->balance -= amt;
           target->balance += amt;
-          atm.updateRecord(target->pin);
+          atm.updateRecord(target);
+          atm.updateRecord(acc);
           cout << "Transfer has been successful.\n";
         }
         break;
@@ -636,7 +640,7 @@ int main(){
         }
         acc->pin = newPin;
         acc->encryptedPin = atm.caesarEncrypt(newPin);
-        atm.updateRecord(newPin); // save the change to Account_Records.csv
+        atm.updateRecord(acc); // save the change to Account_Records.csv
         if(atm.retrieveCardData(drive, accNum, newPin)){ // save the change to pin.code
           cout << "PIN changed successfully.\n";
         } else {
